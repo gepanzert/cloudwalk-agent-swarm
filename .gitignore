@@ -1,1 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+*.pyc
 
+# Environment / secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Data (generated, not source-controlled)
+data/chroma_db/
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Node (for the frontend later)
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
