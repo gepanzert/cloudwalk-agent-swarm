@@ -14,7 +14,7 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "cloudwalk-agent-swarm"}
+    return {"status": "ok", "service": "cloudwalk-agent-swarm", "version": "0.1.0"}
 
 
 @app.get("/health")

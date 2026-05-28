@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Secrets — never bake into image
+.env
+
+# Data (mounted as volume instead)
+data/chroma_db/
+*.db
+*.sqlite
+
+# Git
+.git/
+.gitignore
+
+# Docs
+README.md
+
+# OS
+.DS_Store
+
+# Frontend (separate deployment)
+frontend/
