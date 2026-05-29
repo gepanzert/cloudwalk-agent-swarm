@@ -1,9 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
-
-from app.api.schemas import ChatRequest, ChatResponse
+from langchain_core.messages import HumanMessage
 
 load_dotenv()
+
+from app.api.schemas import ChatRequest, ChatResponse
+from app.graph.build_graph import get_graph
 
 app = FastAPI(
     title="CloudWalk Agent Swarm",
@@ -14,7 +16,7 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "cloudwalk-agent-swarm", "version": "0.1.0"}
+    return {"status": "ok", "service": "cloudwalk-agent-swarm"}
 
 
 @app.get("/health")
@@ -24,9 +26,22 @@ async def health():
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    # Placeholder — Day 4 replaces this with the real agent graph
-    return ChatResponse(
-        response=f"Echo: {request.message}",
-        user_id=request.user_id,
-        agent_used="echo",
-    )
+    try:
+        graph = get_graph()
+
+        result = graph.invoke({
+            "messages": [HumanMessage(content=request.message)],
+            "user_id": request.user_id,
+            "agent_used": "",
+            "final_response": "",
+            "escalate": False,
+        })
+
+        return ChatResponse(
+            response=result["final_response"],
+            user_id=request.user_id,
+            agent_used=result.get("agent_used", "unknown"),
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
