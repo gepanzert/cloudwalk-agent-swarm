@@ -60,17 +60,7 @@ Important rules:
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
-def run_knowledge_agent(message: str, user_id: str = "unknown") -> str:
-    """
-    Run the Knowledge Agent on a user message.
-
-    Args:
-        message: user's question
-        user_id: user identifier for context
-
-    Returns:
-        agent's response as a string
-    """
+def run_knowledge_agent(message: str, user_id: str = "unknown", history: list = None) -> str:
     llm = ChatAnthropic(
         model=os.getenv("KNOWLEDGE_MODEL", "claude-sonnet-4-6"),
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
@@ -80,21 +70,22 @@ def run_knowledge_agent(message: str, user_id: str = "unknown") -> str:
     tools = [infinitepay_knowledge_base, general_web_search]
     llm_with_tools = llm.bind_tools(tools)
 
-    messages = [
-        SystemMessage(content=KNOWLEDGE_AGENT_PROMPT),
-        HumanMessage(content=message),
-    ]
+    # Build messages with history if available
+    messages = [SystemMessage(content=KNOWLEDGE_AGENT_PROMPT)]
 
-    # ReAct loop — think, call tool, observe, repeat until done
-    for _ in range(5):  # max 5 iterations to prevent infinite loops
+    # Add previous turns so the agent has context
+    if history:
+        messages.extend(history[:-1])  # all but the last (which is the current message)
+
+    messages.append(HumanMessage(content=message))
+
+    for _ in range(5):
         response = llm_with_tools.invoke(messages)
         messages.append(response)
 
-        # If no tool calls — we have a final answer
         if not response.tool_calls:
             return response.content
 
-        # Process tool calls
         for tool_call in response.tool_calls:
             tool_name = tool_call["name"]
             tool_args = tool_call["args"]

@@ -91,7 +91,7 @@ TOOLS = [
 TOOL_MAP = {t.name: t for t in TOOLS}
 
 
-def run_support_agent(message: str, user_id: str) -> str:
+def run_support_agent(message: str, user_id: str, history: list = None) -> str:
     """
     Run the Support Agent on a user message.
 
@@ -110,10 +110,12 @@ def run_support_agent(message: str, user_id: str) -> str:
 
     llm_with_tools = llm.bind_tools(TOOLS)
 
-    messages = [
-        SystemMessage(content=SUPPORT_AGENT_PROMPT),
-        HumanMessage(content=f"User ID: {user_id}\nMessage: {message}"),
-    ]
+
+    messages = [SystemMessage(content=SUPPORT_AGENT_PROMPT)]
+    if history:
+        messages.extend(history[:-1])
+    messages.append(HumanMessage(content=f"User ID: {user_id}\nMessage: {message}"))
+    
 
     for _ in range(5):
         response = llm_with_tools.invoke(messages)
