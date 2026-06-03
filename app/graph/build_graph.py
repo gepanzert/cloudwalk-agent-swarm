@@ -25,6 +25,7 @@ from app.agents.knowledge import run_knowledge_agent
 from app.agents.support import run_support_agent
 from app.agents.handoff import run_handoff_agent
 from app.agents.sentiment import analyze_sentiment
+from app.agents.summarization import generate_summary
 
 
 # ── Node functions ────────────────────────────────────────────────────────────
@@ -124,7 +125,7 @@ def support_node(state: AgentState) -> AgentState:
 
 
 def handoff_node(state: AgentState) -> AgentState:
-    """Escalate to human agent via Slack."""
+    """Escalate to human agent via Slack with conversation summary."""
     last_message = ""
     for msg in reversed(state["messages"]):
         if isinstance(msg, HumanMessage):
@@ -133,12 +134,18 @@ def handoff_node(state: AgentState) -> AgentState:
 
     sentiment = state.get("sentiment", "normal")
     priority = state.get("priority", "medium")
-
     trigger = "sentiment_detected" if sentiment in ["urgent", "distressed"] else "support_exhausted"
+
+    # Generate conversation summary before escalating
+    summary = generate_summary(
+        messages=state["messages"],
+        sentiment=sentiment,
+    )
 
     response = run_handoff_agent(
         message=last_message,
         user_id=state.get("user_id", "unknown"),
+        conversation_summary=summary,
         sentiment=sentiment,
         priority=priority,
         trigger=trigger,
