@@ -43,11 +43,19 @@ def search_knowledge_base(query: str, k: int = 4) -> str:
         formatted = []
         for i, doc in enumerate(results, 1):
             source = doc.metadata.get("source", "unknown")
-            formatted.append(f"[Source {i}: {source}]\n{doc.page_content}")
+            formatted.append(
+                f"[Source {i}: {source}]\n{doc.page_content}"
+            )
 
         return "\n\n---\n\n".join(formatted)
 
     except Exception as e:
+        # Graceful fallback if ChromaDB is still being built
+        if "does not exist" in str(e) or "no such file" in str(e).lower():
+            return (
+                "The knowledge base is currently being initialized. "
+                "Please try again in a few minutes."
+            )
         return f"Knowledge base search failed: {str(e)}"
 
 
