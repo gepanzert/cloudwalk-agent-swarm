@@ -50,18 +50,18 @@ def run_router(message: str) -> str:
         max_tokens=10,  # We only need one word back
     )
 
+
     response = llm.invoke([
         SystemMessage(content=ROUTER_PROMPT),
         HumanMessage(content=message),
     ])
 
-    decision = response.content.strip().lower()
+    import re
+    result = re.sub(r'[^a-z]', '', response.content.strip().lower())
 
-    # Sanitize — if the model returns anything unexpected, default to knowledge
-    if decision not in ["knowledge", "support"]:
-        decision = "knowledge"
-
-    return decision
+    if result not in ["knowledge", "support"]:
+        return "knowledge"
+    return result
 
 
 if __name__ == "__main__":
