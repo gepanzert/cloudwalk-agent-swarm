@@ -26,6 +26,7 @@ from app.agents.support import run_support_agent
 from app.agents.handoff import run_handoff_agent
 from app.agents.sentiment import analyze_sentiment
 from app.agents.summarization import generate_summary
+from app.agents.proactive import generate_insight
 
 
 # ── Node functions ────────────────────────────────────────────────────────────
@@ -105,7 +106,7 @@ def knowledge_node(state: AgentState) -> AgentState:
 
 
 def support_node(state: AgentState) -> AgentState:
-    """Run the Support Agent and store the response."""
+    """Run the Support Agent and append a proactive insight if relevant."""
     last_message = ""
     for msg in reversed(state["messages"]):
         if isinstance(msg, HumanMessage):
@@ -117,6 +118,18 @@ def support_node(state: AgentState) -> AgentState:
         user_id=state.get("user_id", "unknown"),
         history=state["messages"],
     )
+
+    # Generate proactive insight based on account data
+    insight = generate_insight(
+        user_id=state.get("user_id", "unknown"),
+        original_question=last_message,
+        support_response=response,
+    )
+
+    # Append insight to response if one was generated
+    if insight:
+        response = f"{response}\n\n---\n💡 **Also worth noting:** {insight}"
+
     return {
         **state,
         "final_response": response,
