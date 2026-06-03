@@ -6,14 +6,14 @@ echo "Starting InfinitePay Agent Swarm..."
 # Seed database if it doesn't exist (fast, ~1 second)
 if [ ! -f "/app/data/infinitepay_users.db" ]; then
     echo "Seeding user database..."
-    python -m data.seed_users
+    python /app/data/seed_users.py
     echo "Database seeded."
 fi
 
 # Run ingestion in background if ChromaDB doesn't exist
 if [ ! -d "/app/data/chroma_db" ]; then
     echo "ChromaDB not found. Starting ingestion in background..."
-    python -m ingestion.scrape &
+    python /app/ingestion/scrape.py &
     echo "Ingestion running in background. API starting now."
 else
     echo "ChromaDB found. Skipping ingestion."
