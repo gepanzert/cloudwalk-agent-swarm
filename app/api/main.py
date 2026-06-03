@@ -77,7 +77,10 @@ async def chat(request: ChatRequest):
             user_id=request.user_id,
             agent_used=result.get("agent_used", "unknown"),
             thread_id=thread_id,
-        )
+            sentiment=result.get("sentiment"),
+            priority=result.get("priority"),
+            escalated=result.get("escalate", False),
+)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -23,3 +23,18 @@ class AgentState(TypedDict):
 
     # Whether to escalate to a human
     escalate: bool
+
+
+from typing import Annotated, Literal
+from typing_extensions import TypedDict
+from langgraph.graph.message import add_messages
+
+
+class AgentState(TypedDict):
+    messages: Annotated[list, add_messages]
+    user_id: str
+    agent_used: str
+    final_response: str
+    escalate: bool
+    sentiment: str
+    priority: str

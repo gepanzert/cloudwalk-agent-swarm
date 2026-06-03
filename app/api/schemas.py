@@ -13,3 +13,6 @@ class ChatResponse(BaseModel):
     user_id: str
     agent_used: str = "none"
     thread_id: Optional[str] = None
+    sentiment: Optional[str] = None
+    priority: Optional[str] = None
+    escalated: Optional[bool] = None
