@@ -6,7 +6,7 @@ echo "Starting InfinitePay Agent Swarm..."
 # Seed database if it doesn't exist (fast, ~1 second)
 if [ ! -f "/app/data/infinitepay_users.db" ]; then
     echo "Seeding user database..."
-    python /app/data/seed_users.py
+    python /app/scripts/seed_users.py
     echo "Database seeded."
 fi
 
