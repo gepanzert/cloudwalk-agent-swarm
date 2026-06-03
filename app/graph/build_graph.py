@@ -27,6 +27,7 @@ from app.agents.handoff import run_handoff_agent
 from app.agents.sentiment import analyze_sentiment
 from app.agents.summarization import generate_summary
 from app.agents.proactive import generate_insight
+from app.agents.personality import apply_personality
 
 
 # ── Node functions ────────────────────────────────────────────────────────────
@@ -173,6 +174,21 @@ def handoff_node(state: AgentState) -> AgentState:
     }
 
 
+def personality_node(state: AgentState) -> AgentState:
+    """Apply consistent voice and tone to the final response."""
+    response = state.get("final_response", "")
+    agent_used = state.get("agent_used", "")
+
+    polished = apply_personality(response, agent_used)
+
+    return {
+        **state,
+        "final_response": polished,
+        "messages": state["messages"][:-1] + [AIMessage(content=polished)]
+        if state["messages"] else state["messages"],
+    }
+
+
 # ── Routing logic ─────────────────────────────────────────────────────────────
 
 def route_after_guardrail(state: AgentState) -> str:
@@ -217,6 +233,7 @@ def build_graph():
     graph.add_node("knowledge", knowledge_node)
     graph.add_node("support", support_node)
     graph.add_node("handoff", handoff_node)
+    graph.add_node("personality", personality_node)
 
     graph.set_entry_point("guardrail")
 
@@ -248,9 +265,10 @@ def build_graph():
         }
     )
 
-    graph.add_edge("knowledge", END)
-    graph.add_edge("support", END)
-    graph.add_edge("handoff", END)
+    graph.add_edge("knowledge", "personality")
+    graph.add_edge("support", "personality")
+    graph.add_edge("handoff", "personality")
+    graph.add_edge("personality", END)
 
     checkpointer = MemorySaver()
     return graph.compile(checkpointer=checkpointer)
