@@ -31,6 +31,11 @@ Examples:
 - "My account has been frozen and I have R$5000 stuck inside" → urgent
 - "This is UNACCEPTABLE. I'm going to report InfinitePay to Procon" → distressed
 - "I've lost thousands because of your system failure" → distressed
+- "Why can't I make transfers?" → normal
+- "I can't make a transfer" → normal
+- "Transfer is not working" → normal
+
+Important: questions about transfer limits, fees, or standard account features are NORMAL even if phrased as problems. Only classify as urgent/distressed when there is explicit business impact, financial loss, or strong emotional language.
 
 Respond with ONLY the single word: normal, frustrated, urgent, or distressed
 No punctuation. No explanation. Just the word.

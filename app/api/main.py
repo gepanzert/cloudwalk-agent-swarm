@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 import uuid
@@ -15,6 +16,20 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# CORS — allows frontend to call the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://*.vercel.app",
+        "https://*.up.railway.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/")
 async def root():
@@ -29,7 +44,6 @@ async def health():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
-        # ── Input guardrail ───────────────────────────────────────
         input_check = check_input(request.message)
         if not input_check["allowed"]:
             return ChatResponse(
@@ -40,13 +54,9 @@ async def chat(request: ChatRequest):
                 thread_id=request.thread_id,
             )
 
-        # ── Thread ID for conversation memory ─────────────────────
-        # If no thread_id provided, create one (new conversation)
-        # If thread_id provided, continue existing conversation
         thread_id = request.thread_id or str(uuid.uuid4())
         config = {"configurable": {"thread_id": thread_id}}
 
-        # ── Agent swarm ───────────────────────────────────────────
         graph = get_graph()
         result = graph.invoke(
             {
@@ -55,13 +65,14 @@ async def chat(request: ChatRequest):
                 "agent_used": "",
                 "final_response": "",
                 "escalate": False,
+                "sentiment": "normal",
+                "priority": "low",
             },
             config=config,
         )
 
         final_response = result["final_response"]
 
-        # ── Output guardrail ──────────────────────────────────────
         output_check = check_output(final_response)
         if not output_check["passed"]:
             return ChatResponse(
@@ -80,7 +91,7 @@ async def chat(request: ChatRequest):
             sentiment=result.get("sentiment"),
             priority=result.get("priority"),
             escalated=result.get("escalate", False),
-)
+        )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
