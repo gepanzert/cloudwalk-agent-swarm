@@ -23,6 +23,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
         "https://*.vercel.app",
+        "https://cloudwalk-agent-swarm.vercel.app",
         "https://*.up.railway.app",
     ],
     allow_credentials=True,
