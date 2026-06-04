@@ -33,17 +33,22 @@ Support response already given: {support_response}
 
 Rules:
 - Identify only ONE insight — the most relevant one
+- The insight MUST be directly related to what the user asked about — not just any account data fact
+    - If the user asked about login, only surface insights about login or account access
+    - If the user asked about transfers, only surface insights about transfers or limits
+    - If the user asked about transactions, only surface insights about transactions
+- NEVER surface insights about unrelated topics (e.g. transfer limits when user asked about login)
 - Only surface an insight if it's genuinely useful (don't force it)
 - If there's nothing meaningful to add, respond with exactly: "NO_INSIGHT"
+    - If responding NO_INSIGHT, return ONLY the word "NO_INSIGHT" — no explanation, no additional text
 - If the support response involves account suspension, blocking, hacking, or any urgent/distressed situation, respond with exactly: "NO_INSIGHT"
-- Never surface insights about unrelated topics when the user is dealing with a serious issue
 - Keep it to 2 sentences maximum
 - Be specific — mention actual amounts, dates, or statuses from the data
 - Frame it as helpful observation, not as a problem
 - CRITICAL: Always respond in the same language as the original question
-- If the original question is in English, respond in English even if the account data is in Portuguese
-- If the original question is in Portuguese, respond in Portuguese
-- Translate any Portuguese terms from the account data into English when responding in English
+    - If the original question is in English, respond in English even if the account data is in Portuguese
+    - If the original question is in Portuguese, respond in Portuguese
+    - Translate any Portuguese terms from the account data into English when responding in English
 
 Good insight examples:
 - "I also noticed your last Pix transfer of R$50 failed — would you like me to check what happened?"
