@@ -56,7 +56,7 @@ export function ChatInterface() {
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border bg-background">
+        <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border bg-background h-[57px]">
           <Button
             variant="ghost"
             size="icon"

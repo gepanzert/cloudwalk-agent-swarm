@@ -22,8 +22,8 @@ interface ChatSidebarProps {
 export function ChatSidebar({ onSelectQuery, onClearChat, messageCount }: ChatSidebarProps) {
   return (
     <aside className="w-80 border-r border-border bg-sidebar flex flex-col h-full">
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-between mb-1">
+      <div className="py-3 px-4 border-b border-sidebar-border h-[57px] flex items-center">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <MessageSquare className="h-4 w-4 text-primary-foreground" />
