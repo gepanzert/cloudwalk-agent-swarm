@@ -12,6 +12,9 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
 
+from langchain_core.messages import AIMessage, ToolMessage
+import json, uuid
+
 from app.tools.user_db import (
     get_account_status,
     get_recent_transactions,
@@ -68,7 +71,7 @@ Tool usage guidelines:
 - For login issues → ALWAYS call tool_get_login_status first, then tailor your response:
     * If status is "active": give troubleshooting steps only — NO ticket, NO escalation
     * If status is "suspended" or "blocked":
-        - ALWAYS open with: "I checked your account and here's what I found: your account is currently [status], which is why you cannot log in."
+        - Explicitly tell the user: "I checked your account and it is currently [suspended/blocked]"
         - Explain this is why login is not working
         - Then create a support ticket and share the ticket ID
     * If status is "pending": explain KYC verification is needed and what steps to take
@@ -93,12 +96,6 @@ EXCEPTION for login issues when account is suspended or blocked:
 - Open DIRECTLY with: "I checked your account and here's what I found: your account is currently [status], which is why you cannot log in."
 - Then immediately create a ticket and provide the ticket ID
 
-CRITICAL RULE — SUSPENDED/BLOCKED ACCOUNTS:
-If get_login_status returns "suspended" or "blocked", you MUST open your response with EXACTLY:
-"I checked your account and here's what I found: your account is currently [status], which is why you cannot log in."
-Do NOT start with any other phrase. Do NOT say "A support ticket has been created" first.
-Always explain the account status BEFORE mentioning the ticket.
-
 Important rules:
 - Always check account data BEFORE asking clarifying questions
 - Most issues can be resolved without a ticket — try self-service first
@@ -106,8 +103,12 @@ Important rules:
 - When creating a support ticket, always tell the user the ticket ID
 - Be specific: "Your daily limit of R$5,000 was reached today" is better than "there may be a limit issue"
 - Always identify yourself as InfinitePay support
-"""
 
+CRITICAL: If any tool returns "no account found" or "user not found":
+- Respond ONLY with: "I wasn't able to find an account associated with your information. Please contact InfinitePay support directly at infinitepay.io/ajuda."
+- NEVER invent or assume account data. NEVER make up names, balances, or transactions.
+- If the user sends a ticket ID (ESC-XXXXX or TKT-XXXXX) as their identifier, ask for their registered email instead.
+"""
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
