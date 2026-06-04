@@ -49,6 +49,12 @@ def apply_personality(response: str, agent_used: str) -> str:
     # These need to stay precise and formal
     if agent_used in ["guardrail_blocked", "handoff"]:
         return response
+    
+
+    # Skip personality if response starts with account status check 
+    # to preserve the critical opening line
+    if response.startswith("I checked your account"):
+        return response
 
     # Skip for very short responses
     if len(response) < 50:

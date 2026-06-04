@@ -270,6 +270,8 @@ def build_graph():
     graph.add_edge("handoff", "personality")
     graph.add_edge("personality", END)
 
+    import os
+    os.makedirs("data", exist_ok=True)
     checkpointer = MemorySaver()
     return graph.compile(checkpointer=checkpointer)
 
