@@ -35,6 +35,8 @@ Rules:
 - Identify only ONE insight — the most relevant one
 - Only surface an insight if it's genuinely useful (don't force it)
 - If there's nothing meaningful to add, respond with exactly: "NO_INSIGHT"
+- If the support response involves account suspension, blocking, hacking, or any urgent/distressed situation, respond with exactly: "NO_INSIGHT"
+- Never surface insights about unrelated topics when the user is dealing with a serious issue
 - Keep it to 2 sentences maximum
 - Be specific — mention actual amounts, dates, or statuses from the data
 - Frame it as helpful observation, not as a problem

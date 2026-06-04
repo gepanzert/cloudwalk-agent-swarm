@@ -1,26 +1,23 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChatMessage } from "./chat-message"
 import { ChatInput } from "./chat-input"
 import { ChatSidebar } from "./chat-sidebar"
 import { LoadingIndicator } from "./loading-indicator"
 import { useChat } from "@/hooks/use-chat"
 import { ExampleQuery } from "@/lib/types"
-import { Bot, Menu, X } from "lucide-react"
+import { Bot, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function ChatInterface() {
   const { conversation, sendMessage, clearConversation } = useChat()
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const [pendingQuery, setPendingQuery] = useState<string>("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [conversation.messages, conversation.isLoading])
 
   const handleSelectQuery = (query: ExampleQuery) => {
@@ -34,10 +31,10 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -57,9 +54,9 @@ export function ChatInterface() {
       </div>
 
       {/* Main chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-background">
+        <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border bg-background">
           <Button
             variant="ghost"
             size="icon"
@@ -88,11 +85,11 @@ export function ChatInterface() {
           </div>
         </header>
 
-        {/* Messages area */}
-        <ScrollArea className="flex-1" ref={scrollRef}>
+        {/* Messages area — scrolls independently */}
+        <div className="flex-1 overflow-y-auto">
           <div className="py-4 space-y-4">
             {conversation.messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
                 <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <Bot className="h-8 w-8 text-primary" />
                 </div>
@@ -100,7 +97,7 @@ export function ChatInterface() {
                   Bem-vindo ao InfinitePay Agent Swarm
                 </h3>
                 <p className="text-muted-foreground text-sm max-w-md leading-relaxed">
-                  Sou seu assistente virtual inteligente. Posso ajudar com dúvidas sobre taxas, 
+                  Sou seu assistente virtual inteligente. Posso ajudar com dúvidas sobre taxas,
                   problemas com transações, suporte técnico e muito mais. Como posso ajudar?
                 </p>
               </div>
@@ -111,12 +108,13 @@ export function ChatInterface() {
             ))}
 
             {conversation.isLoading && <LoadingIndicator />}
+            <div ref={messagesEndRef} />
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Thread ID */}
         {conversation.threadId && (
-          <div className="px-4 py-1 border-t border-border bg-muted/30">
+          <div className="flex-shrink-0 px-4 py-1 border-t border-border bg-muted/30">
             <p className="text-[10px] text-muted-foreground font-mono text-center">
               thread_id: {conversation.threadId}
             </p>
@@ -124,12 +122,14 @@ export function ChatInterface() {
         )}
 
         {/* Input */}
-        <ChatInput
-          onSend={handleSend}
-          disabled={conversation.isLoading}
-          initialValue={pendingQuery}
-          key={pendingQuery}
-        />
+        <div className="flex-shrink-0">
+          <ChatInput
+            onSend={handleSend}
+            disabled={conversation.isLoading}
+            initialValue={pendingQuery}
+            key={pendingQuery}
+          />
+        </div>
       </div>
     </div>
   )

@@ -120,12 +120,16 @@ def support_node(state: AgentState) -> AgentState:
         history=state["messages"],
     )
 
-    # Generate proactive insight based on account data
-    insight = generate_insight(
-        user_id=state.get("user_id", "unknown"),
-        original_question=last_message,
-        support_response=response,
-    )
+    # Generate proactive insight only for non-urgent cases
+    # Urgent/distressed users don't need additional insights — they need resolution
+    sentiment = state.get("sentiment", "normal")
+    insight = ""
+    if sentiment not in ["urgent", "distressed"]:
+        insight = generate_insight(
+            user_id=state.get("user_id", "unknown"),
+            original_question=last_message,
+            support_response=response,
+        )
 
     # Append insight to response if one was generated
     if insight:
