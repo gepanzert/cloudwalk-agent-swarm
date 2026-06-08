@@ -28,26 +28,26 @@ class TestRouterUnit:
         return mock_llm
 
     def test_routes_to_knowledge(self):
-        with patch('app.agents.router.ChatAnthropic', self._mock_router('knowledge')):
+        with patch('app.agents.router.ChatAnthropic', self._mock_router('knowledge_simple')):
             from app.agents.router import run_router
-            assert run_router("What are the fees?") == "knowledge"
+            assert run_router("What are the fees?") == "knowledge_simple"
 
     def test_routes_to_support(self):
-        with patch('app.agents.router.ChatAnthropic', self._mock_router('support')):
+        with patch('app.agents.router.ChatAnthropic', self._mock_router('support_complex')):
             from app.agents.router import run_router
-            assert run_router("I can't make transfers") == "support"
+            assert run_router("I can't make transfers") == "support_complex"
 
     def test_sanitizes_unexpected_response(self):
-        """If model returns unexpected text, defaults to knowledge."""
+        """If model returns unexpected text, defaults to knowledge_simple."""
         with patch('app.agents.router.ChatAnthropic', self._mock_router('something_unexpected')):
             from app.agents.router import run_router
-            assert run_router("Any message") == "knowledge"
+            assert run_router("Any message") == "knowledge_simple"
 
     def test_sanitizes_response_with_punctuation(self):
         """Strips whitespace and punctuation from model response."""
-        with patch('app.agents.router.ChatAnthropic', self._mock_router('  support.  ')):
+        with patch('app.agents.router.ChatAnthropic', self._mock_router('  support_complex.  ')):
             from app.agents.router import run_router
-            assert run_router("I can't sign in") == "support"
+            assert run_router("I can't sign in") == "support_complex"
 
 
 # ── Guardrail tests ───────────────────────────────────────────────────────────
