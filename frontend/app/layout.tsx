@@ -46,7 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning className="bg-background">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased overflow-hidden h-screen`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
