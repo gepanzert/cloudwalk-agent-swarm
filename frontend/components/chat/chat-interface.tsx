@@ -31,7 +31,7 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex bg-background" style={{height: '100vh', overflow: 'hidden'}}>
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -86,7 +86,7 @@ export function ChatInterface() {
         </header>
 
         {/* Messages area — scrolls independently */}
-        <div className="flex-1 overflow-y-auto">
+        <div style={{flex: 1, overflowY: 'auto', minHeight: 0}}>
           <div className="py-4 space-y-4">
             {conversation.messages.length === 0 && (
               <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
