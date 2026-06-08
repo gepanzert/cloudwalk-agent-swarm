@@ -29,6 +29,7 @@ from app.agents.summarization import generate_summary
 from app.agents.proactive import generate_insight
 from app.agents.personality import apply_personality
 from app.agents.crm import create_freshdesk_ticket
+from app.tools.user_db import get_login_status
 
 
 # ── Node functions ────────────────────────────────────────────────────────────
@@ -141,7 +142,6 @@ def support_node(state: AgentState) -> AgentState:
     )
 
     # Ensure suspended/blocked accounts always open with clear explanation
-    from app.tools.user_db import get_login_status
     login_keywords = ["sign in", "login", "log in", "entrar", "acessar", "senha", "password"]
     if any(kw in last_message.lower() for kw in login_keywords):
         login_status = get_login_status(state.get("user_id", "unknown"))
@@ -153,7 +153,7 @@ def support_node(state: AgentState) -> AgentState:
         if status_word and "suspended" not in response.lower() and "blocked" not in response.lower():
             opening = (
                 f"I'm sorry to hear you're having trouble signing in. "
-                f"Here's what I found: your account is currently **{status_word}**. \n\n"
+                f"Here's what I found: your account is currently **{status_word}**.\n\n"
                 f"I will now redirect you to our support team.\n\n"
             )
             response = opening + response
@@ -324,7 +324,7 @@ def build_graph():
     graph.add_edge("handoff", "personality")
     graph.add_edge("personality", END)
 
-    import os
+
     os.makedirs("data", exist_ok=True)
     checkpointer = SqliteSaver("data/checkpoints.db")
     return graph.compile(checkpointer=checkpointer)
