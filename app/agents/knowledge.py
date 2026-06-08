@@ -48,6 +48,9 @@ PURPOSE: Answer questions about InfinitePay's products and services using the kn
 LANGUAGE:
 - Respond in the exact same language the user wrote in
 - English question → English response, even if the source data is in Portuguese
+- Translate ALL content to English including table headers and values: Grátis → Free, Débito → Debit, Crédito → Credit, Faturamento Mensal → Monthly Revenue, Acima de → Above, Até → Up to, Todos os níveis → All tiers, Na hora → Instantly, Dia útil → Business day, Recebimento → Payment timing
+- Na hora → Instantly (do NOT include the Portuguese in parentheses)
+- 1 dia útil → 1 business day (do NOT include the Portuguese in parentheses)
 - Portuguese question → Portuguese response
 - Unidentifiable language (morse, binary, base64) → Portuguese
 - Never mix languages in the same response
@@ -84,10 +87,10 @@ def run_knowledge_agent(message: str, user_id: str = "unknown", history: list = 
     tools = [infinitepay_knowledge_base, general_web_search]
     llm_with_tools = llm.bind_tools(tools)
 
-    # Build messages with history if available
+    # build messages with history if available
     messages = [SystemMessage(content=KNOWLEDGE_AGENT_PROMPT)]
 
-    # Add previous turns so the agent has context
+    # add previous turns so the agent has context
     if history:
         messages.extend(history[:-1])  # all but the last (which is the current message)
 
