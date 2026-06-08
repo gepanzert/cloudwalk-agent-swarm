@@ -75,15 +75,25 @@ def sentiment_node(state: AgentState) -> AgentState:
 
 
 def router_node(state: AgentState) -> AgentState:
-    """Classify the user's message and decide which agent handles it."""
+    """Classify intent and complexity — decides which agent and which model tier."""
     last_message = ""
     for msg in reversed(state["messages"]):
         if isinstance(msg, HumanMessage):
             last_message = msg.content
             break
 
-    decision = run_router(last_message)
-    return {**state, "agent_used": decision}
+    result = run_router(last_message)
+    # result format: "knowledge_simple", "knowledge_complex",
+    #                "support_simple", "support_complex"
+    parts = result.split("_")
+    agent = parts[0]                          # "knowledge" or "support"
+    complexity = parts[1] if len(parts) > 1 else "complex"  # "simple" or "complex"
+
+    return {
+        **state,
+        "agent_used": agent,
+        "query_complexity": complexity,
+    }
 
 
 def knowledge_node(state: AgentState) -> AgentState:
@@ -94,6 +104,8 @@ def knowledge_node(state: AgentState) -> AgentState:
             last_message = msg.content
             break
 
+    # Knowledge Agent always uses Sonnet — fee tables and multi-chunk
+    # synthesis require stronger reasoning than Haiku provides consistently
     response = run_knowledge_agent(
         message=last_message,
         user_id=state.get("user_id", "unknown"),
@@ -114,10 +126,17 @@ def support_node(state: AgentState) -> AgentState:
             last_message = msg.content
             break
 
+    complexity = state.get("query_complexity", "complex")
+    model = (
+        os.getenv("ROUTER_MODEL", "claude-haiku-4-5-20251001")
+        if complexity == "simple"
+        else os.getenv("SUPPORT_MODEL", "claude-sonnet-4-6")
+    )
     response = run_support_agent(
         message=last_message,
         user_id=state.get("user_id", "unknown"),
         history=state["messages"],
+        model=model,
     )
 
     # Ensure suspended/blocked accounts always open with clear explanation
@@ -340,11 +359,13 @@ if __name__ == "__main__":
                 "escalate": False,
                 "sentiment": "normal",
                 "priority": "low",
+                "query_complexity": "",
             },
             config=config,
         )
 
         print(f"Routed to:  {result['agent_used'].upper()}")
+        print(f"Complexity: {result.get('query_complexity', 'n/a').upper()}")
         print(f"Sentiment:  {result.get('sentiment', 'n/a').upper()}")
         print(f"Priority:   {result.get('priority', 'n/a').upper()}")
         print(f"Response:   {result['final_response'][:150]}...")

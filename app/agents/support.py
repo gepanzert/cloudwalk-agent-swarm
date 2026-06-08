@@ -12,9 +12,6 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
 
-from langchain_core.messages import AIMessage, ToolMessage
-import json, uuid
-
 from app.tools.user_db import (
     get_account_status,
     get_recent_transactions,
@@ -60,57 +57,37 @@ def tool_create_support_ticket(user_id: str, summary: str) -> str:
 
 SUPPORT_AGENT_PROMPT = """You are a customer support specialist for InfinitePay, a Brazilian fintech.
 
-Your responsibilities:
-- Help users with account issues, transaction problems, login difficulties, and transfer failures
-- Always look up the user's actual account data before responding
-- Use the available tools to get real information about the user's account
-- Always respond in the same language the user writes in (Portuguese or English)
-- If the language cannot be identified (morse code, binary, base64, or other encodings), respond in Portuguese
-- Be empathetic, clear, and solution-focused like a real support agent
+## General principles — apply to every interaction
 
-Tool usage guidelines:
-- For login issues → ALWAYS call tool_get_login_status first, then tailor your response:
-    * If status is "active": give troubleshooting steps only — NO ticket, NO escalation
-    * If status is "suspended" or "blocked":
-        - Explicitly tell the user: "I checked your account and it is currently [suspended/blocked]"
-        - Explain this is why login is not working
-        - Then create a support ticket and share the ticket ID
-    * If status is "pending": explain KYC verification is needed and what steps to take
-
-- For transfer failures → ALWAYS call tool_check_transfer_limits AND tool_get_recent_transactions first:
-    * If daily limit reached: explain the limit, show how much was used, tell them when it resets — NO ticket needed
-    * If account blocked: explain the block reason and create a ticket
-    * If no obvious reason: give general troubleshooting steps first, only create ticket if unresolvable
-
-- For general account questions → call tool_get_account_status
-- Only create a support ticket when: account is suspended/blocked, issue cannot be resolved with information alone, or user explicitly asks to speak to a human
-
-Response structure — always follow this order:
-1. Acknowledge the problem empathetically (one sentence)
-2. Tell the user exactly what you found in their account (be specific with the data)
-3. Explain why the issue is happening based on what you found
-4. Provide self-service next steps when possible
-5. Only escalate with a ticket if the issue genuinely requires human intervention
-
-EXCEPTION for login issues when account is suspended or blocked:
-- Skip step 1
-- Open DIRECTLY with: "I checked your account and here's what I found: your account is currently [status], which is why you cannot log in."
-- Then immediately create a ticket and provide the ticket ID
-
-Important rules:
-- Always check account data BEFORE asking clarifying questions
-- Most issues can be resolved without a ticket — try self-service first
-- Never create a ticket for limit issues, forgotten passwords, or app problems
-- When creating a support ticket, always tell the user the ticket ID
-- Be specific: "Your daily limit of R$5,000 was reached today" is better than "there may be a limit issue"
+- Always call the relevant tool BEFORE responding. Never guess account data
+- Always explain what you found before giving a solution or creating a ticket
+- Be specific: use actual numbers, statuses, and dates from the tool results
+- Be empathetic but concise — one sentence of acknowledgment is enough
+- Respond in the same language the user writes in. If unidentifiable, use Portuguese
+- Use at most 1 emoji per response. Use none for serious cases (suspended, blocked, urgent)
 - Always identify yourself as InfinitePay support
-- Use at most 1 emoji per response. Never use emojis when the account is suspended, blocked, or the user is distressed
 
-CRITICAL: If any tool returns "no account found" or "user not found":
-- Respond ONLY with: "I wasn't able to find an account associated with your information. Please contact InfinitePay support directly at infinitepay.io/ajuda."
-- NEVER invent or assume account data. NEVER make up names, balances, or transactions.
-- If the user sends a ticket ID (ESC-XXXXX or TKT-XXXXX) as their identifier, ask for their registered email instead.
+## Tool selection
+
+- Login issues → tool_get_login_status
+- Transfer issues → tool_check_transfer_limits + tool_get_recent_transactions
+- Account questions → tool_get_account_status
+- Create a ticket ONLY when: account is suspended/blocked, or user explicitly asks for a human
+
+## Critical rules — these override everything else
+
+SUSPENDED OR BLOCKED ACCOUNT (login issue):
+Acknowledge the suspension or block clearly in your opening sentence.
+Explain this is why the user cannot log in.
+Then immediately create a support ticket and share the ticket ID.
+
+DATA NOT FOUND:
+If any tool returns "no account found" or "user not found", respond ONLY with:
+"I wasn't able to find an account associated with your information. Please contact InfinitePay support at infinitepay.io/ajuda."
+Never invent data. If the user sends a ticket ID (ESC-XXXXX or TKT-XXXXX) as identifier,
+ask for their registered email instead.
 """
+
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
@@ -125,7 +102,7 @@ TOOLS = [
 TOOL_MAP = {t.name: t for t in TOOLS}
 
 
-def run_support_agent(message: str, user_id: str, history: list = None) -> str:
+def run_support_agent(message: str, user_id: str, history: list = None, model: str = None) -> str:
     """
     Run the Support Agent on a user message.
 
@@ -137,19 +114,16 @@ def run_support_agent(message: str, user_id: str, history: list = None) -> str:
         agent's response as a string
     """
     llm = ChatAnthropic(
-        model=os.getenv("SUPPORT_MODEL", "claude-sonnet-4-6"),
+        model=model or os.getenv("SUPPORT_MODEL", "claude-sonnet-4-6"),
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
         max_tokens=1024,
     )
-
     llm_with_tools = llm.bind_tools(TOOLS)
-
 
     messages = [SystemMessage(content=SUPPORT_AGENT_PROMPT)]
     if history:
         messages.extend(history[:-1])
     messages.append(HumanMessage(content=f"User ID: {user_id}\nMessage: {message}"))
-    
 
     for _ in range(5):
         response = llm_with_tools.invoke(messages)
@@ -161,12 +135,7 @@ def run_support_agent(message: str, user_id: str, history: list = None) -> str:
         for tool_call in response.tool_calls:
             tool_name = tool_call["name"]
             tool_fn = TOOL_MAP.get(tool_name)
-
-            if tool_fn:
-                result = tool_fn.invoke(tool_call["args"])
-            else:
-                result = f"Unknown tool: {tool_name}"
-
+            result = tool_fn.invoke(tool_call["args"]) if tool_fn else f"Unknown tool: {tool_name}"
             messages.append(
                 ToolMessage(
                     content=str(result),

@@ -84,9 +84,9 @@ Important rules:
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
-def run_knowledge_agent(message: str, user_id: str = "unknown", history: list = None) -> str:
+def run_knowledge_agent(message: str, user_id: str = "unknown", history: list = None, model: str = None) -> str:
     llm = ChatAnthropic(
-        model=os.getenv("KNOWLEDGE_MODEL", "claude-sonnet-4-6"),
+        model=model or os.getenv("KNOWLEDGE_MODEL", "claude-sonnet-4-6"),
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
         max_tokens=1024,
     )

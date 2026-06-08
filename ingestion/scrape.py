@@ -34,6 +34,7 @@ URLS = [
     "https://www.infinitepay.io/emprestimo",
     "https://www.infinitepay.io/cartao",
     "https://www.infinitepay.io/rendimento",
+    "https://www.infinitepay.io/conta-pj",
 ]
 
 # ── Config ────────────────────────────────────────────────────────────────────
