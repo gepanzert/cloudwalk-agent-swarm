@@ -120,6 +120,25 @@ def support_node(state: AgentState) -> AgentState:
         history=state["messages"],
     )
 
+    # Ensure suspended/blocked accounts always open with clear explanation
+    from app.tools.user_db import get_login_status
+    login_keywords = ["sign in", "login", "log in", "entrar", "acessar", "senha", "password"]
+    if any(kw in last_message.lower() for kw in login_keywords):
+        login_status = get_login_status(state.get("user_id", "unknown"))
+        status_word = None
+        if "suspended" in login_status.lower():
+            status_word = "suspended"
+        elif "blocked" in login_status.lower():
+            status_word = "blocked"
+        if status_word and "suspended" not in response.lower() and "blocked" not in response.lower():
+            opening = (
+                f"I'm sorry to hear you're having trouble signing in. "
+                f"Here's what I found: your account is currently **{status_word}**. \n\n"
+                f"I will now redirect you to our support team.\n\n"
+            )
+            response = opening + response
+
+
     # Generate proactive insight only for non-urgent cases
     # Urgent/distressed users don't need additional insights — they need resolution
     sentiment = state.get("sentiment", "normal")
