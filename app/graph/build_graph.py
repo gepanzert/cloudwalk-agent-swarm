@@ -28,6 +28,7 @@ from app.agents.sentiment import analyze_sentiment
 from app.agents.summarization import generate_summary
 from app.agents.proactive import generate_insight
 from app.agents.personality import apply_personality
+from app.agents.crm import create_freshdesk_ticket
 
 
 # ── Node functions ────────────────────────────────────────────────────────────
@@ -206,6 +207,17 @@ def handoff_node(state: AgentState) -> AgentState:
         priority=priority,
         trigger=trigger,
     )
+
+    # Create CRM ticket in Freshdesk for full audit trail
+    crm_result = create_freshdesk_ticket(
+        user_id=state.get("user_id", "unknown"),
+        summary=summary,
+        priority=priority,
+        sentiment=sentiment,
+    )
+    if crm_result.get("ticket_id"):
+        crm_info = f"\n\n📋 **CRM Ticket:** [{crm_result['ticket_id']}]({crm_result['ticket_url']})"
+        response = response + crm_info
 
     return {
         **state,
