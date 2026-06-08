@@ -15,7 +15,7 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(), override=True)
 
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
+from app.graph.sqlite_saver import SqliteSaver
 from langchain_core.messages import HumanMessage, AIMessage
 
 from app.graph.state import AgentState
@@ -276,7 +276,7 @@ def build_graph():
 
     import os
     os.makedirs("data", exist_ok=True)
-    checkpointer = MemorySaver()
+    checkpointer = SqliteSaver("data/checkpoints.db")
     return graph.compile(checkpointer=checkpointer)
 
 
