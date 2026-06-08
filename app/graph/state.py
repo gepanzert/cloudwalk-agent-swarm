@@ -24,3 +24,5 @@ class AgentState(TypedDict):
     # Query complexity for dynamic model selection
     # Values: "simple" or "complex"
     query_complexity: str
+    awaiting_clarification: bool  # novo
+    clarification_topic: str      # novo — "login", "transfer", etc.

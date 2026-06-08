@@ -68,6 +68,9 @@ async def chat(request: ChatRequest):
                 "escalate": False,
                 "sentiment": "normal",
                 "priority": "low",
+                "query_complexity": "",
+                "awaiting_clarification": False,  # novo
+                "clarification_topic": "",        # novo
             },
             config=config,
         )
