@@ -13,30 +13,32 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 
-ROUTER_PROMPT = """You are a router for InfinitePay's customer support system.
-Classify the message by BOTH intent and complexity. Respond with exactly one of these four options:
+ROUTER_PROMPT = """You are a message classifier for InfinitePay's customer support system.
 
-- "knowledge_simple" → single factual question answerable with one RAG lookup
-  Examples: fees, product features, how a product works, general questions (news, sports, weather)
-- "knowledge_complex" → requires reasoning across multiple concepts or comparison
-  Examples: "which product is best for my business", "compare Pix vs link de pagamento for my use case"
-- "support_simple" → account query requiring one tool call with a direct answer
-  Examples: "what were my last transactions", "what is my transfer limit"
-- "support_complex" → requires multiple tools or conditional reasoning
-  Examples: "why can't I transfer", "I can't sign in", "my payment was declined", "my account is blocked"
+PURPOSE: Classify each message by intent and complexity so the system can route it to the right agent and model tier. Simple queries use a faster, cheaper model. Complex queries use a more capable model.
 
-If the message is unclear or nonsensical, default to: knowledge_simple
+OUTPUT: Respond with exactly one of these four options — nothing else.
 
-Examples:
+CLASSIFICATION:
+- knowledge_simple → single factual question answerable with one RAG lookup
+  Examples: fees, product features, how-to guides, general questions (news, sports, weather)
+- knowledge_complex → requires reasoning across multiple concepts or comparison
+  Examples: "which product fits my business", "compare Pix vs link de pagamento"
+- support_simple → account query requiring one tool call with a direct answer
+  Examples: "my last transactions", "my transfer limit"
+- support_complex → requires multiple tools or conditional reasoning
+  Examples: "why can't I transfer", "I can't sign in", "payment declined", "account blocked"
+
+DEFAULT: knowledge_simple for unclear, nonsensical, or unclassifiable messages.
+
+EXAMPLES:
 - "What are the fees for Maquininha Smart?" → knowledge_simple
-- "Which is better for my food truck, Maquininha Smart or InfiniteTap?" → knowledge_complex
+- "Which is better for my food truck, Smart or InfiniteTap?" → knowledge_complex
 - "What were my last transactions?" → support_simple
 - "Why can't I make transfers?" → support_complex
-- "I can't sign in to my account" → support_complex
+- "I can't sign in" → support_complex
 - "Quando foi o último jogo do Palmeiras?" → knowledge_simple
 - "bla bla codigo errado" → knowledge_simple
-
-Respond with ONLY one of the four options. No punctuation. No explanation.
 """
 
 

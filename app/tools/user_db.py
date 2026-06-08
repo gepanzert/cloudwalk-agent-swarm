@@ -1,5 +1,5 @@
 """
-User database tools — used by the Support Agent.
+User database tools used by the Support Agent.
 Queries the mock SQLite database for user account information.
 """
 

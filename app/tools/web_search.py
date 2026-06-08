@@ -1,5 +1,5 @@
 """
-Web search tool — used by the Knowledge Agent for general questions
+Web search tool used by the Knowledge Agent for general questions
 outside the InfinitePay knowledge base.
 """
 

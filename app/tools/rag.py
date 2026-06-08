@@ -1,6 +1,6 @@
 """
-RAG retrieval tool — used by the Knowledge Agent.
-Searches the InfinitePay vector store and returns relevant chunks.
+RAG retrieval tool used by the Knowledge Agent
+Searches the InfinitePay vector store and returns relevant chunks
 """
 
 import os

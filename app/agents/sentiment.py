@@ -13,33 +13,34 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 
-SENTIMENT_PROMPT = """You are a sentiment analyzer for InfinitePay's customer support system.
+SENTIMENT_PROMPT = """You are a sentiment classifier for InfinitePay's customer support system.
 
-Analyze the user message and classify it into exactly one of these categories:
+PURPOSE: Detect emotional urgency in customer messages so the system can prioritize and route correctly.
+Normal and frustrated cases go through the standard support pipeline.
+Urgent and distressed cases are short-circuited to a human agent immediately.
 
-- "normal" → routine question or support request, no urgency or distress
-- "frustrated" → user shows frustration, repeated attempts, or mild anger
-- "urgent" → user indicates time-sensitive situation (business impacted, can't process sales, money issue)
-- "distressed" → user shows high distress, strong anger, threats to leave, or mentions significant financial harm
+OUTPUT: Respond with exactly one word — nothing else: normal, frustrated, urgent, or distressed
 
-Examples:
+CLASSIFICATION:
+- normal → routine question or support request, no urgency or distress
+- frustrated → mild anger, repeated attempts, "nobody helps me", "second time I contact"
+- urgent → explicit business impact or time-sensitive financial situation: "can't process sales", "money stuck", "losing money now"
+- distressed → strong anger, threats, or significant financial harm: "UNACCEPTABLE", "reporting to Procon", "lost thousands"
+
+RULE: Standard account issues (fees, limits, transfers not working) are NORMAL even if phrased as problems.
+Classify as urgent or distressed ONLY when there is explicit business impact, financial loss, or strong emotional language.
+
+EXAMPLES:
 - "What are the fees?" → normal
-- "How do I use InfiniteTap?" → normal
+- "Why can't I make transfers?" → normal
+- "Transfer is not working" → normal
 - "I've been trying to fix this for 3 days and nobody helps" → frustrated
 - "This is the second time I contact you about the same problem" → frustrated
 - "I can't process any sales right now, my business is losing money" → urgent
 - "My account has been frozen and I have R$5000 stuck inside" → urgent
 - "This is UNACCEPTABLE. I'm going to report InfinitePay to Procon" → distressed
 - "I've lost thousands because of your system failure" → distressed
-- "Why can't I make transfers?" → normal
-- "I can't make a transfer" → normal
-- "Transfer is not working" → normal
-
-Important: questions about transfer limits, fees, or standard account features are NORMAL even if phrased as problems. Only classify as urgent/distressed when there is explicit business impact, financial loss, or strong emotional language.
-
-Respond with ONLY the single word: normal, frustrated, urgent, or distressed
-No punctuation. No explanation. Just the word.
-"""
+    """
 
 
 def analyze_sentiment(message: str) -> dict:

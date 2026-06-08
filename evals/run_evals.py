@@ -1,7 +1,6 @@
 """
-LLM-as-Judge Eval Harness
-Runs the agent swarm against a set of queries and scores responses
-using Claude as the judge. Produces a JSON report.
+LLM-as-Judge Eval Harness runs the agent swarm against a set of queries and scores responses
+using Claude as the judge and produces a JSON report.
 """
 
 import json

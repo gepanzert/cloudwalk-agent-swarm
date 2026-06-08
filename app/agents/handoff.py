@@ -1,7 +1,7 @@
 """
-Human Handoff Agent — escalates conversations to human agents.
-Posts to a real Slack channel via Incoming Webhook.
-Triggered by Sentiment Agent (urgent/distressed) or Support Agent exhaustion.
+Human Handoff Agent - escalates conversations to human agents
+posts to a real Slack channel via Incoming Webhook
+triggered by Sentiment Agent (urgent/distressed) or Support Agent exhaustion
 """
 
 import os
