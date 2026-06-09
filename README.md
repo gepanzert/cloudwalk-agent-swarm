@@ -40,10 +40,7 @@ The brief provided a reference architecture: Input → Router → Agents → Per
 
 <img src="docs/architecture.png" alt="Agent Swarm Architecture" width="80%">
 
-### Design Principle: Urgency Before Intent
-
-The Sentiment Agent precedes the Router in the pipeline by design. A customer whose business is losing money should not wait through RAG retrieval and tool calls before receiving a response time commitment. The Sentiment Agent classifies emotional urgency (normal/frustrated/urgent/distressed) and, for urgent/distressed cases, creates a direct path to human handoff. This threshold is intentionally conservative: a false positive (escalating a routine query) costs slightly more latency than necessary; a false negative (missing a genuinely distressed customer) damages trust. The asymmetry favors over-escalation.
-
+---
 
 ### Agent Specifications
 
@@ -83,16 +80,16 @@ Figures from LangSmith traces on Railway free tier. Production latency would be 
 
 ## RAG Pipeline
 
-**Sources:** 18 pages from infinitepay.io covering all major products — maquininha, InfiniteTap, tap-to-pay, Pix, Pix Parcelado, conta digital, conta-pj, empréstimo, cartão, rendimento, link de pagamento, loja online, boleto, PDV, gestão de cobrança, receba na hora, and the homepage.
+**Sources:** 18 pages from infinitepay.io covering all major products (maquininha, InfiniteTap, Pix, conta digital, empréstimo, cartão, etc.).
 
 **Pipeline:**
 
 1. **Scrape** — `WebBaseLoader` with source URL preserved per chunk for citations
-2. **Chunk** — `RecursiveCharacterTextSplitter` at 1,000 chars with 200-char overlap (332 total chunks). Chunk size was calibrated against the actual page structure: InfinitePay product sections typically span 800–1,200 characters. Smaller chunks split fee tables mid-row; larger chunks mixed unrelated products in a single retrieval unit.
-3. **Embed** — Voyage AI `voyage-3-large` (1,024 dimensions). Chosen over OpenAI `text-embedding-3-small` because `voyage-3-large` is purpose-built for asymmetric retrieval — short queries against long documents — which is the exact pattern here. Also keeps the stack coherent: Anthropic for generation, Anthropic's recommended embedding partner for retrieval.
+2. **Chunk** — `RecursiveCharacterTextSplitter` at 1,000 characters with 200-char overlap (332 total chunks) — chunk size calibrated to match actual product section lengths without splitting fee tables mid-row.
+3. **Embed** — Voyage AI `voyage-3-large` (1,024 dimensions), purpose-built for asymmetric retrieval: short queries against long documents and it's Anthropic's recommended embedding partner for retrieval
 4. **Store** — ChromaDB persisted to disk at `data/chroma_db/`, loaded as a singleton on startup to avoid re-initialization overhead per request
 5. **Retrieve** — cosine similarity, top-4 chunks per query
-6. **Generate** — Sonnet with retrieved context + source URL from chunk metadata
+6. **Generate** — Sonnet synthesizes the response with retrieved context + source URLs from chunk metadata
 
 **Fallback:** when the knowledge base returns no relevant results, Tavily web search handles general queries (sports, news, weather). Responses include an explicit data freshness disclaimer; the agent never presents real-time information as current fact. This behavior was modeled on InfinitePay's own Jim assistant, which uses the same hybrid approach.
 
@@ -191,24 +188,6 @@ cd frontend && npm install && npm run dev
 # http://localhost:3000
 ```
 
-### Running with Docker
-
-```bash
-# Build the image
-docker build -t cloudwalk-agent-swarm:latest .
-
-# Run the container
-docker run -p 8000:8000 \
-  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
-  -e FRESHDESK_DOMAIN=$FRESHDESK_DOMAIN \
-  -e FRESHDESK_API_KEY=$FRESHDESK_API_KEY \
-  -e TAVILY_API_KEY=$TAVILY_API_KEY \
-  -e LANGSMITH_API_KEY=$LANGSMITH_API_KEY \
-  cloudwalk-agent-swarm:latest
-```
-
-API estará em `http://localhost:8000/docs`
-
 ---
 
 ## Testing
@@ -300,16 +279,6 @@ The Sentiment Agent operates as a dedicated pre-router node that classifies emot
 
 The agent is architecturally distinct from Knowledge, Support, and Handoff because its primary output is a **routing decision** (which node to visit next) rather than a response to the user. This makes it structurally similar to the Router itself — both are classification-only nodes that don't generate user-facing text. The difference is scope: Router classifies intent and complexity; Sentiment classifies urgency and priority.
 
-## Approach
-
-The starting point was not code — it was observation. Before finalizing any agent behavior, the same 15 queries were run against InfinitePay's Jim and CloudWalk's Pierre to understand how the production systems behave. Two findings directly shaped the architecture:
-
-Jim presents fees tiered by monthly revenue — not a single rate. This became a hard requirement for the Knowledge Agent: fee tables must always show all tiers. Pierre refuses off-topic queries entirely; Jim answers them via web search and redirects. The Knowledge Agent follows Jim's hybrid approach — refusing "Quando foi o último jogo do Palmeiras?" creates unnecessary friction for a Brazilian fintech user.
-
-Jim also routes complex cases to a specialized support agent (Aya), which informed the Handoff design. The goal was not to build a chatbot that tries to solve everything — it was to build a system that knows when to stop trying and get a human involved.
-
----
-
 ## Design Decisions
 
 ### LangGraph over CrewAI or AutoGen
@@ -348,27 +317,25 @@ Ambiguous queries like "I need help with my account" trigger a clarification que
 
 ## Development Process
 
-The project was built iteratively over approximately two weeks, with each cycle measured against the eval harness. The following captures key architectural decisions and the bugs that forced deeper understanding.
+The project was built iteratively over approximately two weeks, with each cycle measured against the eval harness. The following captures the key discoveries and bugs that shaped the final architecture.
 
-**Cycle 1 — Architecture foundation.** The baseline implementation used FastAPI for the server and LangGraph as the orchestrator. Three agents were built first: Router, Knowledge, Support. The LangGraph choice was deliberate — explicit node structure maps directly to the brief's requirements and makes each agent independently testable. This design enabled all subsequent discoveries because the routing logic remained visible and auditable.
+**Cycle 1 — Architecture foundation.** FastAPI server + LangGraph orchestrator. Three agents implemented first: Router, Knowledge, Support. LangGraph's explicit node structure mapped directly to the requirements and made each agent independently testable.
 
-**Cycle 2 — Competitive research reshapes behavior.** Before finalizing prompts, the production systems Jim (InfinitePay) and Pierre (CloudWalk) were tested with identical queries. Two discoveries directly shaped the architecture:
+**Cycle 2 — Competitive research.** InfinitePay's Jim and CloudWalk's Pierre were tested with identical queries. Two discoveries emerged: Jim presents fees by revenue tier (not a single rate), and Jim uses a hybrid approach for off-topic queries (answering via web search rather than refusing). These patterns informed the Knowledge Agent behavior.
 
-Jim presents fees tiered by monthly revenue — not a single rate. This became a hard requirement: fee tables must always show all tiers in the Knowledge Agent response. Jim also uses a hybrid approach for off-topic queries — refusing "Quando foi o último jogo do Palmeiras?" creates friction; answering via web search then redirecting is more useful. The Knowledge Agent adopted Jim's pattern.
+**Cycle 3 — Sentiment Agent + Handoff layers.** Added Sentiment as a pre-Router node to detect urgency before intent classification (see Design Decisions: Sentiment before Router). Slack notifications configured with priority-colored cards. Freshdesk integration for internal case management.
 
-**Cycle 3 — Sentiment Agent + Handoff layers.** The Sentiment Agent was added **before** the Router — urgent cases short-circuit to human handoff immediately without waiting for the full pipeline. Slack notifications were configured with real-time cards containing priority, user ID, sentiment, and a 5-bullet conversation summary. Freshdesk integration creates internal case management tickets (invisible to the user — the customer sees only the escalation ticket ID, not the CRM infrastructure).
+**Cycle 4 — RAG pipeline and production deployment.** 18 InfinitePay pages chunked at 1,000 chars, embedded with Voyage AI, stored in ChromaDB. Tavily fallback for off-topic queries. Deployment to Railway + Vercel exposed infrastructure constraints: cold starts add 3–5 seconds, health checks timeout during RAG ingestion. Solved with background ingestion + immediate health check response.
 
-**Cycle 4 — RAG pipeline and deployment.** The RAG knowledge base ingests 18 InfinitePay pages chunked at 1,000 characters with 200-char overlap, embedded with Voyage AI, and stored in ChromaDB. Tavily provides web search fallback for off-topic queries with explicit data freshness disclaimers. Deployment to production (Railway backend, Vercel frontend) revealed real infrastructure constraints: cold starts add 3–5 seconds, health checks timeout during initialization. The startup script solves this by running RAG ingestion in the background and responding to health checks immediately.
+**Cycle 5 — Stress testing revealed critical bugs.** Three failures found: Support Agent invented fictional account data on lookup failure (fixed with explicit constraint); Proactive Insights surfaced irrelevant recommendations (fixed with sentiment gate + topic matching); nonsense routed to Support (fixed with exemplary inputs in Router prompt). Each bug required understanding the model's behavior, not just patching output.
 
-**Cycle 5 — Stress testing revealed critical bugs.** System testing found three critical failures: the Support Agent invented fictional account data when lookups failed (fix: explicit constraint — "if the tool returns no account found, respond only with the standard message and never invent data"); Proactive Insights surfaced irrelevant recommendations like transfer limits when asked about login (fix: sentiment gate + topic matching); and nonsense input was routed to Support (fix: exemplary inputs in Router prompt). Each bug required understanding why the model produced incorrect behavior, not just patching the output.
+**Cycle 6 — SqliteSaver and persistent memory.** Official `langgraph-checkpoint-sqlite` had irresolvable dependency conflicts. Built custom implementation using sqlite3 + base64/msgpack encoding to enable conversation history persistence across server restarts — critical on Railway's hibernating free tier.
 
-**Cycle 6 — SqliteSaver and persistent memory.** The official `langgraph-checkpoint-sqlite` package had an irresolvable dependency conflict with the LangGraph version required by the rest of the stack. A custom implementation was built from scratch using Python's sqlite3 module with base64/msgpack encoding — msgpack produces binary bytes that cannot be stored in SQLite text columns; base64 encodes them as ASCII strings. This enabled conversation history to persist across server restarts, critical on Railway's free tier which hibernates after inactivity.
+**Cycle 7 — Eval-driven model selection.** Hypothesis: use Haiku for Knowledge simple queries to reduce cost. Eval score dropped from 4.70 to 4.58 — Haiku dropped lower revenue tiers from fee tables. Falsified. Knowledge stays on Sonnet. Support simple queries use Haiku (single tool call, no synthesis needed).
 
-**Cycle 7 — Eval-driven model selection.** The eval harness tested the hypothesis: use Haiku for Knowledge simple queries to reduce cost. Score dropped from 4.70 to 4.58 — Haiku consistently dropped lower revenue tiers from fee tables. The hypothesis was falsified; Knowledge stays on Sonnet. Support simple queries do use Haiku (single tool call, structured response, no complex synthesis). The Router now classifies both intent and complexity, enabling dynamic model selection downstream.
+**Cycle 8 — Prompt architecture unification.** All prompts rewritten with consistent structure: identity → PURPOSE → configuration → rules → critical cases. PURPOSE block explains downstream consequences of classifications, improving edge case calibration. Eval score increased from 4.70 to 4.83 purely from restructuring.
 
-**Cycle 8 — Prompt architecture unification.** All agent prompts were rewritten with a consistent structure: identity → PURPOSE → configuration → rules → critical cases. The PURPOSE block explains downstream consequences of each classification, which improves edge case calibration. For example, rather than "classify as urgent if time-sensitive," the prompt says "classify as urgent if time-sensitive business impact — urgent cases bypass the support pipeline and go directly to human handoff." The eval score increased from 4.70 to 4.83 purely from prompt restructuring — no changes to model selection, tools, or architecture.
-
-**Cycle 9 — Multi-turn clarification.** Ambiguous queries like "I need help with my account" trigger a clarification question before any tool calls. The `awaiting_clarification` state persists across sessions via SqliteSaver — if a user closes the browser and returns the next day, the system knows it was waiting for clarification.
+**Cycle 9 — Multi-turn clarification.** Ambiguous queries trigger clarification before tool calls. State persists via SqliteSaver across sessions.
 
 ---
 
