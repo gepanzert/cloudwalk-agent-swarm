@@ -38,7 +38,7 @@ A multi-agent customer support system for InfinitePay. The system routes custome
 
 The brief provided a reference architecture: Input → Router → Agents → Personality → Output. This implementation adopts that foundation and extends it with two pre-router layers, Guardrail and Sentiment, and a custom Handoff Agent, plus tools and intern agents. 
 
-<img src="docs/architecture.png" alt="Agent Swarm Architecture" width="80%">
+<img src="docs/architecture.png" alt="Agent Swarm Architecture">
 
 ---
 
