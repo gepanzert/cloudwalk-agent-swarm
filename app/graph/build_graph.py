@@ -237,8 +237,7 @@ def handoff_node(state: AgentState) -> AgentState:
     )
     print(f"[CRM DEBUG] result: {crm_result}")
     if crm_result.get("ticket_id"):
-        crm_info = f"\n\n📋 **CRM Ticket:** [{crm_result['ticket_id']}]({crm_result['ticket_url']})"
-        response = response + crm_info
+        print(f"[CRM] Ticket created: {crm_result['ticket_id']}")
     else:
         print(f"[CRM DEBUG] ticket not created — error: {crm_result.get('error', 'unknown')}")
 
